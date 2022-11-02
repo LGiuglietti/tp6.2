@@ -35,30 +35,19 @@ typedef struct
 } celdaEspecie;
 
 //prototipados
-void iniciadoDeArregloArboles(celdaEspecie A[]);
-nodoArbol*insertar(nodoArbol*arbol,nodoArbol*aux);
+nodoArbol*insertar(nodoArbol*arbol,registroArchivo aux);
 nodoArbol*crearNodoArbol(registroArchivo dato);
-void pasarDeArchivoToADA(celdaEspecie*A[]);
+int pasarDeArchivoToADA(celdaEspecie A[]);
 void preorder(nodoArbol*arbol);
+int buscarPosArreglo (celdaEspecie A[], registroArchivo aux, int posicion);
+int agregarToArreglo(celdaEspecie A[],registroArchivo aux,int validosArreglo);
+void mostrarArregloyArbol(celdaEspecie A[], int validos);
 //fin prototipados
 int main()
 {
     celdaEspecie Arreglo[5];
-    iniciadoDeArregloArboles(Arreglo);
-    strcpy(Arreglo[0].especie,"Mamiferos");
-    strcpy(Arreglo[0].especie,"Aves");
-    strcpy(Arreglo[0].especie,"Reptiles");
-    strcpy(Arreglo[0].especie,"Peces");
-    strcpy(Arreglo[0].especie,"Anfibios");
-    pasarDeArchivoToADA(Arreglo);
-    for(int i=0;i<5;i++)
-    {
-        printf("subindice de arreglo:%d\n", i);
-        puts(Arreglo[i].especie);
-        printf("id de especie: %d\n",Arreglo[i].idEspecie);
-        preorder(Arreglo[i].arbolDeAnimales);
-        printf("\n");
-    }
+    int validosArreglo=pasarDeArchivoToADA(Arreglo);
+    mostrarArregloyArbol(Arreglo,validosArreglo);
     return 0;
 }
 nodoArbol*crearNodoArbol(registroArchivo dato)
@@ -71,54 +60,64 @@ nodoArbol*crearNodoArbol(registroArchivo dato)
     aux->izq=NULL;
     return aux;
 }
-void pasarDeArchivoToADA(celdaEspecie*A[])
+int pasarDeArchivoToADA(celdaEspecie A[])
 {
-    FILE*archi=fopen("animales.dat","r");
+    FILE*archi=fopen("animales.dat","rb");
     registroArchivo aux;
-    int i=0;
+    int posicion, validosArreglo=0;
     while(fread(&aux,sizeof(registroArchivo),1,archi)>0)
     {
-        while(i<5)
+
+        posicion=buscarPosArreglo(A,aux,posicion);
+        if(posicion==-1)
         {
-            if(strcmpi(A[i]->especie,aux.especie)==0)
-            {
-                strcpy(A[i]->especie,aux.especie);
-                A[i]->idEspecie=aux.idEspecie;
-                nodoArbol*dato=crearNodoArbol(aux);
-                A[i]->arbolDeAnimales=insertar(A[i]->arbolDeAnimales,dato);
-                i++;
-            }
-            else
-            {
-                i++;
-            }
+            validosArreglo=agregarToArreglo(A,aux,validosArreglo);
+            posicion=validosArreglo-1;
         }
-        i=0;
+
+        A[posicion].arbolDeAnimales=insertar(A[posicion].arbolDeAnimales,aux);
     }
     fclose(archi);
+    return validosArreglo;
 }
-nodoArbol*insertar(nodoArbol*arbol,nodoArbol*aux)
+int buscarPosArreglo (celdaEspecie A[], registroArchivo aux, int posicion)
+{
+    int i=1;
+    posicion=-1;
+    while(i<6)
+    {
+        if(aux.idEspecie==A[i].idEspecie)
+        {
+            posicion=i;
+        }
+        i++;
+    }
+    return posicion;
+}
+int agregarToArreglo(celdaEspecie A[],registroArchivo aux,int validosArreglo)
+{
+    A[validosArreglo].idEspecie=aux.idEspecie;
+    strcpy(A[validosArreglo].especie,aux.especie);
+    A[validosArreglo].arbolDeAnimales = NULL;
+    validosArreglo++;
+    return validosArreglo;
+}
+nodoArbol*insertar(nodoArbol*arbol,registroArchivo aux)
 {
     if(arbol==NULL)
     {
-        arbol=aux;
+        nodoArbol*nn=crearNodoArbol(aux);
+        arbol=nn;
     }
-    else if(arbol->dato.cantidad>aux->dato.cantidad)
+    else if(arbol->dato.cantidad>aux.cant)
     {
-        insertar(arbol->izq,aux);
+        arbol->izq=insertar(arbol->izq,aux);
     }
     else
     {
-        insertar(arbol->der,aux);
+        arbol->der=insertar(arbol->der,aux);
     }
     return arbol;
-}
-void iniciadoDeArregloArboles(celdaEspecie A[])
-{
-    for(int i=0; i<5; i++)
-    {
-        A[i].arbolDeAnimales=NULL;
-    }
 }
 void preorder(nodoArbol*arbol)
 {
@@ -129,5 +128,16 @@ void preorder(nodoArbol*arbol)
         printf("habitat: %d\t",arbol->dato.habitat);
         preorder(arbol->izq);
         preorder(arbol->der);
+    }
+}
+void mostrarArregloyArbol(celdaEspecie A[], int validos)
+{
+    for(int i=0; i<validos; i++)
+    {
+
+        printf("id de especie: %d\n",A[i].idEspecie);
+        puts(A[i].especie);
+        preorder(A[i].arbolDeAnimales);
+        printf("\n");
     }
 }
